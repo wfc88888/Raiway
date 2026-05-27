@@ -1,0 +1,18 @@
+:8080 {
+    handle /ss* {
+        reverse_proxy 127.0.0.1:10001
+    }
+    handle /vless* {
+        reverse_proxy 127.0.0.1:10002
+    }
+    handle /vmess* {
+        reverse_proxy 127.0.0.1:10003
+    }
+    handle /xhttp-vless* {
+        reverse_proxy 127.0.0.1:10005
+    }
+    # 瞎猜路径的一律返回普通文字，防白嫖防探测
+    handle {
+        respond "Hello World" 200
+    }
+}
