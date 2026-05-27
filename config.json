@@ -9,7 +9,7 @@
       "protocol": "shadowsocks",
       "settings": {
         "method": "aes-128-gcm",
-        "password": "wfc88888"
+        "password": "809a3434-de69-4790-a7b9-39e84c007f48"
       },
       "streamSettings": { "network": "ws", "wsSettings": { "path": "/ss", "maxEarlyData": 2560 } }
     },
@@ -17,21 +17,21 @@
       "port": 10002,
       "listen": "127.0.0.1",
       "protocol": "vless",
-      "settings": { "clients": [{ "id": "wfc88888" }], "decryption": "none" },
+      "settings": { "clients": [{ "id": "809a3434-de69-4790-a7b9-39e84c007f48" }], "decryption": "none" },
       "streamSettings": { "network": "ws", "wsSettings": { "path": "/vless", "maxEarlyData": 2560 } }
     },
     {
       "port": 10003,
       "listen": "127.0.0.1",
       "protocol": "vmess",
-      "settings": { "clients": [{ "id": "wfc88888", "alterId": 0 }] },
+      "settings": { "clients": [{ "id": "809a3434-de69-4790-a7b9-39e84c007f48", "alterId": 0 }] },
       "streamSettings": { "network": "ws", "wsSettings": { "path": "/vmess", "maxEarlyData": 2560 } }
     },
     {
       "port": 10005,
       "listen": "127.0.0.1",
       "protocol": "vless",
-      "settings": { "clients": [{ "id": "wfc88888" }], "decryption": "none" },
+      "settings": { "clients": [{ "id": "809a3434-de69-4790-a7b9-39e84c007f48" }], "decryption": "none" },
       "streamSettings": { "network": "xhttp", "xhttpSettings": { "path": "/xhttp-vless" } }
     }
   ],
