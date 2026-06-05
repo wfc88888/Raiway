@@ -1,5 +1,5 @@
-#!/bin/bash
-set -u
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
 TOKEN_PLACEHOLDER="PASTE_YOUR_CLOUDFLARE_TUNNEL_TOKEN_HERE"
 ARGO_TOKEN="${ARGO_TOKEN:-}"
@@ -7,48 +7,50 @@ RESTART_DELAY="${RESTART_DELAY:-5}"
 HEALTH_INTERVAL="${HEALTH_INTERVAL:-60}"
 HEALTH_FAIL_LIMIT="${HEALTH_FAIL_LIMIT:-3}"
 TUNNEL_HEALTH_URL="${TUNNEL_HEALTH_URL:-}"
+TUNNEL_EDGE_PROTOCOL="${TUNNEL_EDGE_PROTOCOL:-http2}"
+CADDY_HEALTH_URL="${CADDY_HEALTH_URL:-http://127.0.0.1:8080/healthz}"
 PID_DIR="/tmp/service-pids"
 
 mkdir -p "${PID_DIR}"
-
-if [ -z "${ARGO_TOKEN}" ] || [ "${ARGO_TOKEN}" = "${TOKEN_PLACEHOLDER}" ]; then
-  echo "Error: ARGO_TOKEN is missing. 请在部署平台填写环境变量。"
-  exit 1
-fi
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
+if [ -z "${ARGO_TOKEN}" ] || [ "${ARGO_TOKEN}" = "${TOKEN_PLACEHOLDER}" ]; then
+  log "Error: ARGO_TOKEN is missing. 请在部署平台填写环境变量。"
+  exit 1
+fi
+
 run_forever() {
-  name="$1"
+  local name="$1"
   shift
-  pid_file="${PID_DIR}/${name}.pid"
+  local pid_file="${PID_DIR}/${name}.pid"
 
   while true; do
     log "Starting ${name}..."
     "$@" &
-    pid="$!"
+    local pid="$!"
     echo "${pid}" > "${pid_file}"
     log "${name} started, pid=${pid}"
 
-    wait "${pid}"
-    code="$?"
+    wait "${pid}" || true
+    local code="$?"
     rm -f "${pid_file}"
-
     log "${name} exited with code ${code}. Restarting in ${RESTART_DELAY}s..."
     sleep "${RESTART_DELAY}"
   done
 }
 
 stop_service() {
-  name="$1"
-  pid_file="${PID_DIR}/${name}.pid"
+  local name="$1"
+  local pid_file="${PID_DIR}/${name}.pid"
 
   if [ -f "${pid_file}" ]; then
+    local pid
     pid="$(cat "${pid_file}" 2>/dev/null || true)"
     if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
-      log "Stopping ${name}, pid=${pid}. Watchdog will restart it."
+      log "Stopping ${name}, pid=${pid}. Watchdog will restart it if main script continues."
       kill "${pid}" 2>/dev/null || true
       sleep 3
       kill -9 "${pid}" 2>/dev/null || true
@@ -65,29 +67,23 @@ cleanup() {
 }
 
 keep_alive() {
-  log "Starting Built-in Stable Keep-Alive Daemon..."
+  log "Starting keep-alive daemon..."
   while true; do
-    # 1. 内部活跃：唤醒本地 Caddy 进程，防止系统判定进程休眠
-    curl -s http://127.0.0.1:8080/ >/dev/null 2>&1 || true
-
-    # 2. 外部活跃：向 Cloudflare 官方探针发送请求，维持网络 I/O 活跃
-    curl -s https://1.1.1.1/cdn-cgi/trace >/dev/null 2>&1 || true
-
-    # 每隔 10 分钟模拟一次呼吸
+    curl -fsS --max-time 8 "${CADDY_HEALTH_URL}" >/dev/null 2>&1 || true
+    curl -fsS --max-time 8 https://1.1.1.1/cdn-cgi/trace >/dev/null 2>&1 || true
     sleep 600
   done
 }
 
 health_check() {
-  caddy_fail=0
-  tunnel_fail=0
+  local caddy_fail=0
+  local tunnel_fail=0
 
   log "Starting health checker..."
   while true; do
     sleep "${HEALTH_INTERVAL}"
 
-    # Caddy 本地健康检查：连续失败才重启，避免网络瞬断误杀
-    if curl -fsS --max-time 8 http://127.0.0.1:8080/ >/dev/null 2>&1; then
+    if curl -fsS --max-time 8 "${CADDY_HEALTH_URL}" >/dev/null 2>&1; then
       caddy_fail=0
     else
       caddy_fail=$((caddy_fail + 1))
@@ -99,7 +95,6 @@ health_check() {
       fi
     fi
 
-    # 可选：填写 TUNNEL_HEALTH_URL=https://你的域名 后，可检测公网隧道是否可访问
     if [ -n "${TUNNEL_HEALTH_URL}" ]; then
       if curl -fsS --max-time 12 "${TUNNEL_HEALTH_URL}" >/dev/null 2>&1; then
         tunnel_fail=0
@@ -118,18 +113,20 @@ health_check() {
 
 trap cleanup INT TERM
 
-log "Starting proxy services with watchdog..."
+log "Validating Xray config..."
+/usr/bin/xray/xray run -test -c /etc/xray/config.json
 
+log "Validating Caddy config..."
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+log "Starting proxy services with watchdog..."
 keep_alive &
 health_check &
 
-# Xray 前台运行，退出后自动拉起
 run_forever xray /usr/bin/xray/xray run -c /etc/xray/config.json &
-
-# Caddy 必须用 run，不要用 start；run 会以前台运行，方便 watchdog 感知退出
+sleep 2
 run_forever caddy caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
-
-# Cloudflare Tunnel 前台运行，退出后自动拉起
-run_forever cloudflared /usr/bin/cloudflared tunnel --no-autoupdate run --token "${ARGO_TOKEN}" &
+sleep 2
+run_forever cloudflared /usr/bin/cloudflared tunnel --no-autoupdate --protocol "${TUNNEL_EDGE_PROTOCOL}" run --token "${ARGO_TOKEN}" &
 
 wait
