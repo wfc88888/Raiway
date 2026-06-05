@@ -4,38 +4,118 @@
   },
   "inbounds": [
     {
+      "tag": "ss-ws-in",
       "port": 10001,
       "listen": "127.0.0.1",
       "protocol": "shadowsocks",
       "settings": {
         "method": "aes-128-gcm",
-        "password": "809a3434-de69-4790-a7b9-39e84c007f48"
+        "password": "809a3434-de69-4790-a7b9-39e84c007f48",
+        "network": "tcp,udp"
       },
-      "streamSettings": { "network": "ws", "wsSettings": { "path": "/ss", "maxEarlyData": 2560 } }
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/ss",
+          "maxEarlyData": 2560
+        }
+      }
     },
     {
+      "tag": "vless-ws-in",
       "port": 10002,
       "listen": "127.0.0.1",
       "protocol": "vless",
-      "settings": { "clients": [{ "id": "809a3434-de69-4790-a7b9-39e84c007f48" }], "decryption": "none" },
-      "streamSettings": { "network": "ws", "wsSettings": { "path": "/vless", "maxEarlyData": 2560 } }
+      "settings": {
+        "clients": [
+          {
+            "id": "809a3434-de69-4790-a7b9-39e84c007f48",
+            "level": 0
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/vless",
+          "maxEarlyData": 2560
+        }
+      }
     },
     {
+      "tag": "vmess-ws-in",
       "port": 10003,
       "listen": "127.0.0.1",
       "protocol": "vmess",
-      "settings": { "clients": [{ "id": "809a3434-de69-4790-a7b9-39e84c007f48", "alterId": 0 }] },
-      "streamSettings": { "network": "ws", "wsSettings": { "path": "/vmess", "maxEarlyData": 2560 } }
+      "settings": {
+        "clients": [
+          {
+            "id": "809a3434-de69-4790-a7b9-39e84c007f48",
+            "alterId": 0,
+            "level": 0
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/vmess",
+          "maxEarlyData": 2560
+        }
+      }
     },
     {
+      "tag": "vless-xhttp-in",
       "port": 10005,
       "listen": "127.0.0.1",
       "protocol": "vless",
-      "settings": { "clients": [{ "id": "809a3434-de69-4790-a7b9-39e84c007f48" }], "decryption": "none" },
-      "streamSettings": { "network": "xhttp", "xhttpSettings": { "path": "/xhttp-vless" } }
+      "settings": {
+        "clients": [
+          {
+            "id": "809a3434-de69-4790-a7b9-39e84c007f48",
+            "level": 0
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "path": "/xhttp-vless"
+        }
+      }
+    },
+    {
+      "tag": "vless-grpc-in",
+      "port": 10006,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "809a3434-de69-4790-a7b9-39e84c007f48",
+            "level": 0
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "grpcSettings": {
+          "serviceName": "grpc-vless"
+        }
+      }
     }
   ],
   "outbounds": [
-    { "protocol": "freedom" }
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
   ]
 }
