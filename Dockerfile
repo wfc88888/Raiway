@@ -4,7 +4,7 @@ FROM alpine:latest
 ARG ARGO_TOKEN=""
 ENV ARGO_TOKEN="${ARGO_TOKEN}"
 ENV XRAY_VERSION="26.5.9"
-ENV TUNNEL_EDGE_PROTOCOL="http2"
+ENV TUNNEL_EDGE_PROTOCOL=""
 
 RUN apk add --no-cache \
       bash \
