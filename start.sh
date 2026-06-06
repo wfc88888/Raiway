@@ -7,7 +7,7 @@ RESTART_DELAY="${RESTART_DELAY:-5}"
 HEALTH_INTERVAL="${HEALTH_INTERVAL:-60}"
 HEALTH_FAIL_LIMIT="${HEALTH_FAIL_LIMIT:-3}"
 TUNNEL_HEALTH_URL="${TUNNEL_HEALTH_URL:-}"
-TUNNEL_EDGE_PROTOCOL="${TUNNEL_EDGE_PROTOCOL:-http2}"
+TUNNEL_EDGE_PROTOCOL="${TUNNEL_EDGE_PROTOCOL:-}"
 CADDY_HEALTH_URL="${CADDY_HEALTH_URL:-http://127.0.0.1:8080/healthz}"
 PID_DIR="/tmp/service-pids"
 
@@ -127,6 +127,6 @@ run_forever xray /usr/bin/xray/xray run -c /etc/xray/config.json &
 sleep 2
 run_forever caddy caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
 sleep 2
-run_forever cloudflared /usr/bin/cloudflared tunnel --no-autoupdate --protocol "${TUNNEL_EDGE_PROTOCOL}" run --token "${ARGO_TOKEN}" &
+run_forever cloudflared /usr/bin/cloudflared tunnel --no-autoupdate  run --token "${ARGO_TOKEN}" &
 
 wait
